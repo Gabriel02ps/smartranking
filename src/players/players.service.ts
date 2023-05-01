@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { CreatePlayerDto } from './dtos/create-player.dto';
 import { Player } from './interfaces/player.interface';
 import { v4 as uuidv4 } from 'uuid';
@@ -12,19 +12,32 @@ export class PlayersService {
   async getUpdatePlayer(createPlayerDto: CreatePlayerDto): Promise<void> {
     const { email } = createPlayerDto;
 
-    const playerFound = await this.players.find(
-      (player) => player.email === email,
-    );
+    const playerFound = this.players.find((player) => player.email === email);
 
     if (playerFound) {
       this.update(playerFound, createPlayerDto);
     } else {
-      await this.create(createPlayerDto);
+      this.create(createPlayerDto);
     }
   }
 
   async getAllPlayers(): Promise<Player[]> {
-    return await this.players;
+    return this.players;
+  }
+
+  async consultPlayersByEmail(email: string): Promise<Player> {
+    const playerFound = this.players.find((player) => player.email === email);
+    if (!playerFound) {
+      throw new NotFoundException(`Player with ${email} not found`);
+    }
+    return playerFound;
+  }
+
+  async deletePlayer(email: string): Promise<void> {
+    const playerFound = this.players.find((player) => player.email === email);
+    this.players = this.players.filter(
+      (player) => player.email !== playerFound.email,
+    );
   }
 
   private create(createPlayerDto: CreatePlayerDto): void {
